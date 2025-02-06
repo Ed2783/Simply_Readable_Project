@@ -1,0 +1,14 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+# NODE
+node_modules/
+
+# CDK
+cdk.out/
+.cdk.staging
+*.js
+*.d.ts
+
+# JEST
+coverage/
