@@ -1,26 +1,35 @@
 version: 0.2
 phases:
   install:
+    runtime-versions:
+      nodejs: 18
     commands:
-      - echo "Linking config directory..."
-      - '[ ! -d "./config" ] || { echo "additionalInputs: ./config must not exist yet"; exit 1; }'
-      - ln -s -- "$CODEBUILD_SRC_DIR_GetConfigOutput" "./config"
+      - echo "Installing dependencies..."
+      - cd document-translation-main/util/getOptions
+      - npm ci
+  pre_build:
+    commands:
+      - echo "Generating config file..."
+      - npm run start
       - ls -la
-      - ls -la ./config
+      - echo "Generated config.json:"
+      - cat config.json
+      - mkdir -p ../../config
+      - cp config.json ../../config/
+      - cd ../../
+      - echo "Config directory contents:"
+      - ls -la config/
   build:
     commands:
-      - echo "Creating infrastructure directory..."
-      - mkdir -p ./infrastructure
-      - echo "Copying config file..."
-      - cp ./config/config.json ./infrastructure/
-      - echo "Verifying config file..."
-      - ls -la ./infrastructure/
-      - cat ./infrastructure/config.json
-      - cd ./infrastructure
+      - echo "Setting up infrastructure..."
+      - cd infrastructure
+      - cp ../config/config.json .
+      - echo "Infrastructure config.json:"
+      - cat config.json
       - npm ci
       - npm run cdk synth
 artifacts:
   files:
-    - infrastructure/cdk.out/**/*
+    - document-translation-main/infrastructure/cdk.out/**/*
   base-directory: .
   discard-paths: false 
