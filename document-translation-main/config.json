@@ -1,0 +1,60 @@
+{
+  "common": {
+    "instance": {
+      "name": "main"
+    },
+    "development": {
+      "enable": true
+    }
+  },
+  "pipeline": {
+    "source": {
+      "repoOwner": "Ed2783",
+      "repoName": "Simply_Readable_Project",
+      "repoBranch": "main",
+      "repoHookEnable": true,
+      "repoPeriodicChecksEnable": true,
+      "connectionArn": "arn:aws:codeconnections:eu-west-2:084828583135:connection/c9553e41-5e8e-45c2-b1a1-bec2cf4a6169"
+    },
+    "approvals": {
+      "preCdkSynth": {
+        "enable": false
+      }
+    },
+    "removalPolicy": "DELETE"
+  },
+  "app": {
+    "cognito": {
+      "localUsers": {
+        "enable": true,
+        "mfa": {
+          "enforcement": "OFF",
+          "otp": false,
+          "sms": false
+        }
+      },
+      "saml": {
+        "enable": false
+      }
+    },
+    "webUi": {
+      "enable": true,
+      "customDomain": {
+        "enable": false
+      }
+    },
+    "translation": {
+      "enable": true,
+      "lifecycle": 7,
+      "pii": {
+        "enable": true,
+        "lifecycle": 7
+      }
+    },
+    "readable": {
+      "enable": true,
+      "bedrockRegion": "eu-west-2"
+    },
+    "removalPolicy": "DELETE"
+  }
+} 

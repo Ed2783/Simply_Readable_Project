@@ -19,6 +19,7 @@ export interface props {
 	runtime?: lambda.Runtime;
 	architecture?: lambda.Architecture;
 	bundlingNodeModules?: string[];
+	bundling?: nodejs.BundlingOptions;
 	timeout?: cdk.Duration;
 }
 
@@ -62,6 +63,7 @@ export class dt_lambda extends Construct {
 			bundling: {
 				nodeModules: props.bundlingNodeModules,
 				externalModules: ["@aws-sdk/*"],
+				...(props.bundling || {}),
 			},
 			timeout: props.timeout,
 			// COMMON

@@ -212,6 +212,12 @@ export class dt_readableWorkflowParseDoc extends Construct {
 			},
 			timeout: cdk.Duration.minutes(1),
 			bundlingNodeModules: ["turndown"],
+			bundling: {
+				minify: true,
+				sourceMap: false,
+				nodeModules: ["turndown"],
+				externalModules: ["@aws-sdk/*"]
+			}
 		});
 
 		// STATE MACHINE | TASKS | htmlToMd

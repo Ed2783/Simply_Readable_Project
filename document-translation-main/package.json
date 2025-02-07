@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "cdk-nag": "^2.35.11"
+  }
+}
