@@ -127,6 +127,7 @@ export class pipelineStack extends cdk.Stack {
 				"ls -la",
 				"echo 'Setting up getOptions...'",
 				"cd document-translation-main/util/getOptions",
+				"echo 'Installing getOptions dependencies...'",
 				"npm ci",
 				"echo 'Generating config...'",
 				"npm run start",
@@ -141,6 +142,7 @@ export class pipelineStack extends cdk.Stack {
 				"ls -la config/",
 				"echo 'Setting up infrastructure...'",
 				"cd infrastructure",
+				"mkdir -p .",
 				"cp ../config/config.json .",
 				"echo 'Infrastructure config.json:'",
 				"cat config.json",
@@ -156,6 +158,24 @@ export class pipelineStack extends cdk.Stack {
 			codePipeline: pipeline,
 			synth: synth,
 			codeBuildDefaults: {
+				buildEnvironment: {
+					buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
+					environmentVariables: {
+						NODE_ENV: { value: 'production' },
+						AWS_REGION: { value: this.region },
+						INSTANCE_NAME: { value: config.common.instance.name },
+					},
+				},
+				partialBuildSpec: codebuild.BuildSpec.fromObject({
+					version: "0.2",
+					phases: {
+						install: {
+							"runtime-versions": {
+								nodejs: "18"
+							}
+						}
+					}
+				}),
 				rolePolicy: [
 					new iam.PolicyStatement({
 						effect: iam.Effect.ALLOW,
@@ -177,6 +197,13 @@ export class pipelineStack extends cdk.Stack {
 						actions: ["appsync:GetIntrospectionSchema"],
 						resources: [
 							`arn:aws:appsync:${this.region}:${this.account}:/v1/apis/*/schema`,
+						],
+					}),
+					new iam.PolicyStatement({
+						effect: iam.Effect.ALLOW,
+						actions: ["ssm:GetParametersByPath"],
+						resources: [
+							`arn:aws:ssm:${this.region}:${this.account}:parameter/doctran/${config.common.instance.name}/*`,
 						],
 					}),
 				],
