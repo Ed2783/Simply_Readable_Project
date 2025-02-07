@@ -1,0 +1,26 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - echo "Linking config directory..."
+      - '[ ! -d "./config" ] || { echo "additionalInputs: ./config must not exist yet"; exit 1; }'
+      - ln -s -- "$CODEBUILD_SRC_DIR_GetConfigOutput" "./config"
+      - ls -la
+      - ls -la ./config
+  build:
+    commands:
+      - echo "Creating infrastructure directory..."
+      - mkdir -p ./infrastructure
+      - echo "Copying config file..."
+      - cp ./config/config.json ./infrastructure/
+      - echo "Verifying config file..."
+      - ls -la ./infrastructure/
+      - cat ./infrastructure/config.json
+      - cd ./infrastructure
+      - npm ci
+      - npm run cdk synth
+artifacts:
+  files:
+    - infrastructure/cdk.out/**/*
+  base-directory: .
+  discard-paths: false 
