@@ -121,7 +121,7 @@ export class pipelineStack extends cdk.Stack {
 		const synth = new cdkpipelines.ShellStep("Synth", {
 			input: pipelineSource,
 			additionalInputs: {
-				"./config": cdkpipelines.CodePipelineFileSet.fromArtifact(getConfigOutput),
+				"./document-translation-main/config": cdkpipelines.CodePipelineFileSet.fromArtifact(getConfigOutput),
 			},
 			primaryOutputDirectory: `${dirPipeline}/cdk.out`,
 			commands: [
@@ -129,12 +129,11 @@ export class pipelineStack extends cdk.Stack {
 				"echo 'Current directory structure:'",
 				"ls -la",
 				"echo 'Config directory contents:'",
-				"ls -la ./config",
+				"ls -la ./document-translation-main/config",
 				"echo 'Creating infrastructure directory:'",
 				"mkdir -p ./document-translation-main/infrastructure",
 				"echo 'Copying config files:'",
-				`cp ./config/config.json ./${dirPipeline}/`,
-				`cp ./config/config.json ./${dirPipeline}/config.json`,
+				`cp ./document-translation-main/config/config.json ./${dirPipeline}/`,
 				"echo 'Verifying copied config files:'",
 				`ls -la ./${dirPipeline}/config.json`,
 				`cat ./${dirPipeline}/config.json`,
