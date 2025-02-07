@@ -116,8 +116,6 @@ export class pipelineStack extends cdk.Stack {
 			enableKeyRotation: true,
 		});
 
-		const getConfigOutput = new codepipeline.Artifact("GetConfigOutput");
-
 		const synth = new cdkpipelines.ShellStep("Synth", {
 			input: pipelineSource,
 			primaryOutputDirectory: `${dirPipeline}/cdk.out`,
