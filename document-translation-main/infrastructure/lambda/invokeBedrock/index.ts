@@ -6,6 +6,10 @@ import {
 	InvokeModelCommand,
 	InvokeModelCommandInput,
 	InvokeModelCommandOutput,
+	ValidationException,
+	ModelTimeoutException,
+	ModelErrorException,
+	ThrottlingException
 } from "@aws-sdk/client-bedrock-runtime";
 
 const BEDROCK_REGION: string | undefined =
@@ -20,47 +24,65 @@ const bedrockClient: BedrockRuntimeClient = new BedrockRuntimeClient({
 });
 
 interface event {
-	ModelId: string;
-	Body: any;
+	modelId: string;
+	input: any;
 }
 
 export const handler = async (event: event) => {
-	console.log(JSON.stringify(event, null, 4));
+	console.log("Received event:", JSON.stringify(event, null, 4));
 
-	const modelId: string = event.ModelId;
+	const modelId: string = event.modelId;
 	if (!modelId) {
 		throw new Error("Missing modelId");
 	}
 
-	const body: any = event.Body;
-	if (!body) {
-		throw new Error("Missing body");
+	const input: any = event.input;
+	if (!input) {
+		throw new Error("Missing input");
 	}
 
-	const input: InvokeModelCommandInput = {
-		body: JSON.stringify(body),
-		contentType: "application/json",
-		accept: "application/json",
-		modelId: modelId,
-	};
-	console.log("input", input);
-	const command = new InvokeModelCommand(input);
+	try {
+		const modelInput: InvokeModelCommandInput = {
+			body: JSON.stringify(input),
+			contentType: "application/json",
+			accept: "application/json",
+			modelId: modelId,
+		};
+		console.log("Bedrock API input:", JSON.stringify(modelInput, null, 4));
+		
+		const command = new InvokeModelCommand(modelInput);
+		const response: InvokeModelCommandOutput = await bedrockClient.send(command);
+		
+		console.log("Bedrock API response metadata:", response.$metadata);
+		const responseStatusCode = response.$metadata.httpStatusCode;
+		
+		if (responseStatusCode !== 200) {
+			throw new Error(`Unexpected response status code: ${responseStatusCode}`);
+		}
 
-	const response: InvokeModelCommandOutput = await bedrockClient.send(command);
-	console.log("response.$metadata", response.$metadata);
-	const responseStatusCode = response.$metadata.httpStatusCode;
-	if (responseStatusCode !== 200) {
-		throw new Error(`Response status code: "${responseStatusCode}"`);
+		const encodedResult = response.body;
+		const stringResult = new TextDecoder().decode(encodedResult);
+		const resultBody: any = JSON.parse(stringResult);
+
+		return {
+			body: resultBody,
+			contentType: response.contentType,
+		};
+	} catch (error: unknown) {
+		console.error("Error invoking Bedrock model:", error);
+		
+		if (error instanceof ValidationException) {
+			throw new Error(`Invalid request: ${error.message}`);
+		} else if (error instanceof ModelTimeoutException) {
+			throw new Error(`Model timeout: ${error.message}`);
+		} else if (error instanceof ModelErrorException) {
+			throw new Error(`Model error: ${error.message}`);
+		} else if (error instanceof ThrottlingException) {
+			throw new Error(`Rate limit exceeded: ${error.message}`);
+		} else if (error instanceof Error) {
+			throw new Error(`Unexpected error: ${error.message}`);
+		} else {
+			throw new Error('An unknown error occurred');
+		}
 	}
-
-	const encodedResult = response.body;
-	const stringResult = new TextDecoder().decode(encodedResult);
-	const resultBody: any = JSON.parse(stringResult);
-
-	const result = {
-		Body: resultBody,
-		ContentType: response.contentType,
-	};
-
-	return result;
 };

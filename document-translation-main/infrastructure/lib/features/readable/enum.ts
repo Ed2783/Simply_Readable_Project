@@ -38,3 +38,11 @@ export enum ItemType {
 export enum Bucket {
 	PREFIX_PRIVATE = "private",
 }
+
+export enum ModelId {
+    ANTHROPIC_CLAUDE_V2 = "anthropic.claude-v2",
+    ANTHROPIC_CLAUDE_3_SONNET = "anthropic.claude-3-sonnet-v1",
+    AMAZON_TITAN_TEXT = "amazon.titan-text-lite-v1",
+    AMAZON_TITAN_IMAGE = "amazon.titan-image-generator-v1",
+    STABILITY_DIFFUSION = "stability.stable-diffusion-xl-v1"
+}
