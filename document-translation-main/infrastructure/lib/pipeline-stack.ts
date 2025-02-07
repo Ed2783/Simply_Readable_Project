@@ -125,22 +125,28 @@ export class pipelineStack extends cdk.Stack {
 				"pwd",
 				"echo 'Current directory structure:'",
 				"ls -la",
+				"echo 'Setting up getOptions...'",
 				"cd document-translation-main/util/getOptions",
 				"npm ci",
+				"echo 'Generating config...'",
 				"npm run start",
 				"ls -la",
 				"echo 'Generated config.json:'",
 				"cat config.json",
+				"echo 'Setting up config directory...'",
 				"mkdir -p ../../config",
 				"cp config.json ../../config/",
 				"cd ../../",
 				"echo 'Config directory contents:'",
 				"ls -la config/",
+				"echo 'Setting up infrastructure...'",
 				"cd infrastructure",
 				"cp ../config/config.json .",
 				"echo 'Infrastructure config.json:'",
 				"cat config.json",
+				"echo 'Installing infrastructure dependencies...'",
 				"npm ci",
+				"echo 'Running CDK synth...'",
 				"npm run cdk synth"
 			],
 		});
@@ -308,166 +314,6 @@ export class pipelineStack extends cdk.Stack {
 				],
 			});
 		}
-
-		// GetOptions
-		const preSynthProjectRole = new iam.Role(this, "preSynthProjectRole", {
-			assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
-			inlinePolicies: {
-				ssmPolicy: new iam.PolicyDocument({
-					statements: [
-						new iam.PolicyStatement({
-							effect: iam.Effect.ALLOW,
-							actions: ["ssm:GetParametersByPath"],
-							resources: [
-								`arn:aws:ssm:${this.region}:${this.account}:parameter/doctran/${config.common.instance.name}/`,
-							],
-						}),
-					],
-				}),
-				artifactPolicy: new iam.PolicyDocument({
-					statements: [
-						new iam.PolicyStatement({
-							effect: iam.Effect.ALLOW,
-							actions: [
-								"s3:GetObject*",
-								"s3:GetBucket*",
-								"s3:List*",
-								"s3:DeleteObject*",
-								"s3:PutObject*",
-								"s3:Abort*"
-							],
-							resources: [
-								artifactBucket.bucketArn,
-								`${artifactBucket.bucketArn}/*`
-							],
-						}),
-					],
-				}),
-				logsPolicy: new iam.PolicyDocument({
-					statements: [
-						new iam.PolicyStatement({
-							effect: iam.Effect.ALLOW,
-							actions: [
-								"logs:CreateLogGroup",
-								"logs:CreateLogStream",
-								"logs:PutLogEvents"
-							],
-							resources: [
-								`arn:aws:logs:${this.region}:${this.account}:log-group:/aws/codebuild/*`,
-								`arn:aws:logs:${this.region}:${this.account}:log-group:/aws/codebuild/*:*`
-							],
-						}),
-					],
-				}),
-				reportGroupPolicy: new iam.PolicyDocument({
-					statements: [
-						new iam.PolicyStatement({
-							effect: iam.Effect.ALLOW,
-							actions: [
-								"codebuild:CreateReportGroup",
-								"codebuild:CreateReport",
-								"codebuild:UpdateReport",
-								"codebuild:BatchPutTestCases"
-							],
-							resources: [
-								`arn:aws:codebuild:${this.region}:${this.account}:report-group/*`
-							],
-						}),
-					],
-				}),
-			},
-		});
-
-		const preSynthProject = new codebuild.PipelineProject(
-			this,
-			"preSynthProject",
-			{
-				role: preSynthProjectRole,
-				environment: {
-					buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
-					environmentVariables: {
-						INSTANCE_NAME: {
-							type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
-							value: config.common.instance.name,
-						},
-						DEBUG: {
-							type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
-							value: "true",
-						},
-						NODE_ENV: {
-							type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
-							value: "production",
-						},
-						AWS_REGION: {
-							type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
-							value: this.region,
-						},
-					},
-				},
-				buildSpec: codebuild.BuildSpec.fromObject({
-					version: "0.2",
-					phases: {
-						install: {
-							commands: [
-								"echo $INSTANCE_NAME",
-								"ls -la",
-								"pwd",
-								"cd document-translation-main/util/getOptions || exit 1",
-								"ls -la",
-								"[ -f 'package.json' ] || { echo 'package.json not found'; exit 1; }",
-								"npm ci || exit 1",
-							],
-						},
-						build: {
-							commands: [
-								"pwd",
-								"npm run start || exit 1",
-								"ls -la",
-								"[ -f 'config.json' ] || { echo 'config.json was not generated'; exit 1; }",
-								"echo 'Generated config file:'",
-								"cat config.json",
-								"echo 'Creating config directory...'",
-								"mkdir -p ../../config",
-								"cp config.json ../../config/ || exit 1",
-								"cd ../../",
-								"pwd",
-								"ls -la",
-								"ls -la config/",
-								"[ -f 'config/config.json' ] || { echo 'config.json not copied correctly'; exit 1; }",
-								"echo 'Final config file:'",
-								"cat config/config.json"
-							],
-						},
-						post_build: {
-							commands: [
-								"echo 'Validating config.json structure'",
-								"cat config/config.json | jq . > /dev/null || { echo 'Invalid JSON format'; exit 1; }"
-							]
-						}
-					},
-					artifacts: {
-						files: ["config/config.json"],
-						"base-directory": "document-translation-main",
-						"discard-paths": false
-					},
-				}),
-			},
-		);
-
-		const preBuildAction = new codepipeline_actions.CodeBuildAction({
-			actionName: "GetConfig",
-			project: preSynthProject,
-			input: sourceOutput,
-			outputs: [getConfigOutput],
-		});
-
-		pipeline.addStage({
-			stageName: "PreSynth",
-			placement: {
-				justAfter: pipeline.stages[0],
-			},
-			actions: [preBuildAction],
-		});
 
 		// Create monitoring topic for pipeline
 		const pipelineMonitoringKey = new kms.Key(this, "PipelineMonitoringKey", {
