@@ -122,11 +122,10 @@ export class pipelineStack extends cdk.Stack {
 			input: pipelineSource,
 			primaryOutputDirectory: `${dirPipeline}/cdk.out`,
 			commands: [
-				"pwd",
 				"echo 'Current directory structure:'",
-				"ls -la",
+				"ls -la $CODEBUILD_SRC_DIR",
 				"echo 'Setting up getOptions...'",
-				"cd document-translation-main/util/getOptions",
+				"cd $CODEBUILD_SRC_DIR/document-translation-main/util/getOptions",
 				"echo 'Installing getOptions dependencies...'",
 				"npm ci",
 				"echo 'Generating config...'",
@@ -134,14 +133,13 @@ export class pipelineStack extends cdk.Stack {
 				"ls -la",
 				"echo 'Generated config.json:'",
 				"cat config.json",
-				"echo 'Setting up config directory...'",
-				"mkdir -p ../../config",
-				"cp config.json ../../config/",
-				"cd ../../",
+				"echo 'Copying config.json to config directory...'",
+				"mkdir -p $CODEBUILD_SRC_DIR/document-translation-main/config",
+				"cp config.json $CODEBUILD_SRC_DIR/document-translation-main/config/config.json",
 				"echo 'Config directory contents:'",
-				"ls -la config/",
+				"ls -la $CODEBUILD_SRC_DIR/document-translation-main/config",
 				"echo 'Setting up infrastructure...'",
-				"cd infrastructure",
+				"cd $CODEBUILD_SRC_DIR/document-translation-main/infrastructure",
 				"mkdir -p .",
 				"cp ../config/config.json .",
 				"echo 'Infrastructure config.json:'",
@@ -150,7 +148,7 @@ export class pipelineStack extends cdk.Stack {
 				"npm ci",
 				"echo 'Running CDK synth...'",
 				"npm run cdk synth"
-			],
+			]
 		});
 
 		// PIPELINE | CDKPIPELINE
